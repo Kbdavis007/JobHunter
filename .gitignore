@@ -1,0 +1,54 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+/dist/
+/build/
+/out/
+/out-tsc/
+/.angular/
+/.angular/cache/
+/public/build/
+
+# React
+/.cache/
+/build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Angular
+/dist/
+/out-tsc/
+/e2e/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+
+# Coverage
+/coverage/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*.local

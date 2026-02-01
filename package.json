@@ -1,0 +1,14 @@
+{
+  "name": "JobHunter",
+  "private": true,
+  "workspaces": [
+    "micro-frontends/*"
+  ],
+  "scripts": {
+    "start": "npm --workspace micro-frontends run start",
+    "build": "npm --workspace micro-frontends run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

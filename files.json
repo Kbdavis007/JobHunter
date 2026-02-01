@@ -1,0 +1,315 @@
+# ============================
+# micro-frontends/package.json
+# ============================
+{
+  "name": "micro-frontends",
+  "private": true,
+  "workspaces": [
+    "micro-shell",
+    "tracker",
+    "people-hunter"
+  ],
+  "scripts": {
+    "start": "concurrently \"npm:start --workspace micro-shell\" \"npm:start --workspace tracker\" \"npm:start --workspace people-hunter\"",
+    "build": "concurrently \"npm:build --workspace micro-shell\" \"npm:build --workspace tracker\" \"npm:build --workspace people-hunter\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
+
+# ============================
+# micro-frontends/README.md
+# ============================
+# Micro Frontends Workspace
+
+## Install
+npm install
+
+## Start all MFEs
+npm start
+
+- Shell → http://localhost:3000
+- Tracker → http://localhost:3001
+- People Hunter → http://localhost:3002
+
+## Build all MFEs
+npm run build
+
+---
+
+# ============================
+# micro-shell/package.json
+# ============================
+{
+  "name": "micro-shell",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "webpack serve --config webpack.config.js",
+    "build": "webpack --config webpack.config.js"
+  },
+  "devDependencies": {
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4",
+    "html-webpack-plugin": "^5.6.0"
+  }
+}
+
+# ============================
+# micro-shell/webpack.config.js
+# ============================
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { ModuleFederationPlugin } = require("webpack").container;
+
+module.exports = {
+  mode: "development",
+  entry: "./src/index.js",
+  devServer: { port: 3000 },
+  output: { publicPath: "http://localhost:3000/" },
+  plugins: [
+    new ModuleFederationPlugin({
+      name: "shell",
+      remotes: {
+        tracker: "tracker@http://localhost:3001/remoteEntry.js",
+        peoplehunter: "peoplehunter@http://localhost:3002/remoteEntry.js"
+      }
+    }),
+    new HtmlWebpackPlugin({ template: "./src/index.html" })
+  ]
+};
+
+# ============================
+# micro-shell/src/index.html
+# ============================
+<!DOCTYPE html>
+<html>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
+
+# ============================
+# micro-shell/src/index.js
+# ============================
+import "tracker/TrackerElement";
+import "peoplehunter/PeopleHunterElement";
+
+document.getElementById("app").innerHTML = `
+  <h1>Micro Shell</h1>
+  <tracker-widget></tracker-widget>
+  <people-hunter-widget></people-hunter-widget>
+`;
+
+---
+
+# ============================
+# tracker/package.json
+# ============================
+{
+  "name": "tracker",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "webpack serve --config webpack.config.js",
+    "build": "webpack --config webpack.config.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.25.9",
+    "babel-loader": "^9.2.1",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}
+
+# ============================
+# tracker/.babelrc
+# ============================
+{
+  "presets": ["@babel/preset-env", "@babel/preset-react"]
+}
+
+# ============================
+# tracker/webpack.config.js
+# ============================
+const { ModuleFederationPlugin } = require("webpack").container;
+
+module.exports = {
+  mode: "development",
+  entry: "./src/index.js",
+  devServer: { port: 3001 },
+  output: { publicPath: "http://localhost:3001/" },
+  module: {
+    rules: [
+      { test: /\.(js|jsx)$/, loader: "babel-loader", exclude: /node_modules/ }
+    ]
+  },
+  resolve: { extensions: [".js", ".jsx"] },
+  plugins: [
+    new ModuleFederationPlugin({
+      name: "tracker",
+      filename: "remoteEntry.js",
+      exposes: { "./TrackerElement": "./src/tracker-element.js" },
+      shared: {
+        react: { singleton: true, eager: true },
+        "react-dom": { singleton: true, eager: true }
+      }
+    })
+  ]
+};
+
+# ============================
+# tracker/src/Tracker.jsx
+# ============================
+import React from "react";
+
+export default function Tracker() {
+  return (
+    <div style={{ padding: 16, border: "1px solid #ccc" }}>
+      <h3>Tracker (React)</h3>
+      <p>This is a React micro frontend rendered as a Web Component.</p>
+    </div>
+  );
+}
+
+# ============================
+# tracker/src/tracker-element.js
+# ============================
+import React from "react";
+import ReactDOM from "react-dom/client";
+import Tracker from "./Tracker";
+
+class TrackerElement extends HTMLElement {
+  connectedCallback() {
+    if (!this._root) {
+      this._root = ReactDOM.createRoot(this);
+      this._root.render(<Tracker />);
+    }
+  }
+  disconnectedCallback() {
+    if (this._root) {
+      this._root.unmount();
+      this._root = null;
+    }
+  }
+}
+
+customElements.define("tracker-widget", TrackerElement);
+
+# ============================
+# tracker/src/index.js
+# ============================
+import "./tracker-element";
+
+---
+
+# ============================
+# people-hunter/package.json
+# ============================
+{
+  "name": "people-hunter",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "webpack serve --config webpack.config.js",
+    "build": "webpack --config webpack.config.js"
+  },
+  "dependencies": {
+    "@angular/core": "^18.0.0",
+    "@angular/platform-browser": "^18.0.0",
+    "rxjs": "^7.8.1",
+    "zone.js": "^0.14.10",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "ts-loader": "^9.5.1",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}
+
+# ============================
+# people-hunter/tsconfig.json
+# ============================
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"]
+}
+
+# ============================
+# people-hunter/webpack.config.js
+# ============================
+const { ModuleFederationPlugin } = require("webpack").container;
+
+module.exports = {
+  mode: "development",
+  entry: "./src/main.ts",
+  devServer: { port: 3002 },
+  output: { publicPath: "http://localhost:3002/", uniqueName: "peoplehunter" },
+  resolve: { extensions: [".ts", ".js"] },
+  module: {
+    rules: [
+      { test: /\.ts$/, loader: "ts-loader", options: { transpileOnly: true } }
+    ]
+  },
+  plugins: [
+    new ModuleFederationPlugin({
+      name: "peoplehunter",
+      filename: "remoteEntry.js",
+      exposes: { "./PeopleHunterElement": "./src/people-hunter-element.ts" }
+    })
+  ]
+};
+
+# ============================
+# people-hunter/src/people-hunter.component.ts
+# ============================
+import { Component } from "@angular/core";
+
+@Component({
+  selector: "people-hunter-root",
+  template: `
+    <div style="padding:16px; border:1px solid #ccc">
+      <h3>People Hunter (Angular)</h3>
+      <p>This is an Angular micro frontend rendered as a Web Component.</p>
+    </div>
+  `
+})
+export class PeopleHunterComponent {}
+
+# ============================
+# people-hunter/src/people-hunter-element.ts
+# ============================
+import "zone.js";
+import { createApplication } from "@angular/platform-browser";
+import { PeopleHunterComponent } from "./people-hunter.component";
+
+class PeopleHunterElement extends HTMLElement {
+  async connectedCallback() {
+    const app = await createApplication({ providers: [] });
+    app.bootstrap(PeopleHunterComponent, this);
+  }
+}
+
+customElements.define("people-hunter-widget", PeopleHunterElement);
+
+# ============================
+# people-hunter/src/main.ts
+# ============================
+import "./people-hunter-element";

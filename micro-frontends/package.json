@@ -1,0 +1,16 @@
+{
+  "name": "micro-frontends",
+  "private": true,
+  "workspaces": [
+    "micro-shell",
+    "tracker",
+    "people-hunter"
+  ],
+  "scripts": {
+    "start": "concurrently \"npm --workspace micro-shell run start\" \"npm --workspace tracker run start\" \"npm --workspace people-hunter run start\"",
+    "build": "concurrently \"npm --workspace micro-shell run build\" \"npm --workspace tracker run build\" \"npm --workspace people-hunter run build\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
